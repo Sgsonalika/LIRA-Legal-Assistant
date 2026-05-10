@@ -120,6 +120,8 @@ python main.py
 Open your browser at: **http://localhost:5000**
 
 📂 Project Structure
+
+```text
 LIRA/
 ├── main.py
 ├── requirements.txt
@@ -163,6 +165,8 @@ LIRA/
     └── static/
         ├── css/main.css
         └── js/main.js
+```
+
 
 🌐 Routes
 | Route                    | Description             |
@@ -181,52 +185,64 @@ LIRA/
 
 
 📄 Supported Legal Documents
-Employment Contract
-Non-Disclosure Agreement (NDA)
-Rental / Lease Agreement
-Partnership Deed
-Sale Agreement
-Power of Attorney
-Affidavit
-Memorandum of Understanding (MOU)
-Freelance / Service Agreement
-Loan Agreement
+
+-Employment Contract
+-Non-Disclosure Agreement (NDA)
+-Rental / Lease Agreement
+-Partnership Deed
+-Sale Agreement
+-Power of Attorney
+-Affidavit
+-Memorandum of Understanding (MOU)
+-Freelance / Service Agreement
+-Loan Agreement
 
 🔐 Security Features
-Password hashing with bcrypt
-Session-based authentication
-Local SQLite storage
-Secure API key handling
-Protected authenticated routes
+
+-Password hashing with bcrypt
+-Session-based authentication
+-Local SQLite storage
+-Secure API key handling
+-Protected authenticated routes
 
 🧠 AI Features
-LIRA uses Google Gemini API for:
-Legal research assistance
-Legal explanation generation
-Structured legal answers
-Automated document drafting
-Context-aware conversations
+
+-LIRA uses Google Gemini API for:
+-Legal research assistance
+-Legal explanation generation
+-Structured legal answers
+-Automated document drafting
+-Context-aware conversations
 
 📊 Future Improvements
-PDF export support
-OCR for scanned legal documents
-AI-powered clause risk analysis
-Legal citation verification
-Multi-user cloud synchronization
-Advanced legal precedent search
-Voice-assisted legal queries
+
+-PDF export support
+-OCR for scanned legal documents
+-AI-powered clause risk analysis
+-Legal citation verification
+-Multi-user cloud synchronization
+-Advanced legal precedent search
+-Voice-assisted legal queries
 
 ⚠️ Disclaimer
+
 LIRA is an AI-assisted legal research and drafting tool and does not constitute professional legal advice.
 Users should consult a licensed legal professional before making legal decisions.
 
 🤝 Contributing
+
 Contributions, feature suggestions, and improvements are welcome.
-Fork the repository
+
+ork the repository
+
 Create a feature branch
+
 Commit your changes
+
 Open a pull request
 
 👨‍💻 Author
+
 Developed by Sonalika Gupta
+
 GitHub: https://github.com/Sgsonalika
