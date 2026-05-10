@@ -76,7 +76,7 @@ It helps users:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/LIRA.git
+git clone https://github.com/Sgsonalika/LIRA-Legal-Assistant.git
 cd LIRA
 ```
 
@@ -187,46 +187,71 @@ LIRA/
 📄 Supported Legal Documents
 
 -Employment Contract
+
 -Non-Disclosure Agreement (NDA)
+
 -Rental / Lease Agreement
+
 -Partnership Deed
+
 -Sale Agreement
+
 -Power of Attorney
+
 -Affidavit
+
 -Memorandum of Understanding (MOU)
+
 -Freelance / Service Agreement
+
 -Loan Agreement
 
 🔐 Security Features
 
 -Password hashing with bcrypt
+
 -Session-based authentication
+
 -Local SQLite storage
+
 -Secure API key handling
+
 -Protected authenticated routes
 
 🧠 AI Features
 
 -LIRA uses Google Gemini API for:
+
 -Legal research assistance
+
 -Legal explanation generation
+
 -Structured legal answers
+
 -Automated document drafting
+
 -Context-aware conversations
 
 📊 Future Improvements
 
 -PDF export support
+
 -OCR for scanned legal documents
+
 -AI-powered clause risk analysis
+
 -Legal citation verification
+
 -Multi-user cloud synchronization
+
 -Advanced legal precedent search
+
 -Voice-assisted legal queries
 
 ⚠️ Disclaimer
 
 LIRA is an AI-assisted legal research and drafting tool and does not constitute professional legal advice.
+
 Users should consult a licensed legal professional before making legal decisions.
 
 🤝 Contributing
