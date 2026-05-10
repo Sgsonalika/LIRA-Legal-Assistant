@@ -1,0 +1,74 @@
+{% extends "settings/base.html" %}
+{% block settings_content %}
+<div class="settings-page">
+  <div class="settings-page-header">
+    <div class="settings-page-title">🎨 Appearance</div>
+    <div class="settings-page-desc">Customise how LIRA looks for you.</div>
+  </div>
+  <div class="settings-page-body">
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-row__label">Theme</div>
+        <div class="settings-row__desc">Choose light or dark mode — saved to your account</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem">
+      <div class="theme-option theme-light {% if current_user.theme == 'light' %}active{% endif %}"
+           onclick="setTheme('light')" style="flex:1">
+        <div class="theme-preview" style="background:linear-gradient(135deg,#f8f6f1 50%,#fff 100%);height:70px;border-radius:6px;margin-bottom:.6rem;border:1px solid var(--border)"></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;font-size:.88rem;font-weight:500">
+          <span>☀️</span> Light
+          <span id="light-check" style="color:var(--accent);display:{% if current_user.theme=='light' %}inline{% else %}none{% endif %}">✓</span>
+        </div>
+      </div>
+      <div class="theme-option theme-dark {% if current_user.theme == 'dark' %}active{% endif %}"
+           onclick="setTheme('dark')" style="flex:1">
+        <div class="theme-preview" style="background:linear-gradient(135deg,#0f0e0c 50%,#1a1916 100%);height:70px;border-radius:6px;margin-bottom:.6rem;border:1px solid var(--border)"></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;font-size:.88rem;font-weight:500">
+          <span>🌙</span> Dark
+          <span id="dark-check" style="color:var(--accent);display:{% if current_user.theme=='dark' %}inline{% else %}none{% endif %}">✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-row" style="border-bottom:none">
+      <div>
+        <div class="settings-row__label">Font Size</div>
+        <div class="settings-row__desc">Adjust text size across the app</div>
+      </div>
+      <div class="settings-row__control">
+        <select class="form-select" style="width:150px" onchange="setFontSize(this.value)">
+          <option value="14">Small (14px)</option>
+          <option value="16" selected>Default (16px)</option>
+          <option value="18">Large (18px)</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block settings_js %}
+<script>
+async function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+  document.querySelector('.theme-' + theme).classList.add('active');
+  document.getElementById('light-check').style.display = theme === 'light' ? 'inline' : 'none';
+  document.getElementById('dark-check').style.display  = theme === 'dark'  ? 'inline' : 'none';
+  await fetch('/settings/update-theme', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({theme}),
+  });
+  showToast('Theme saved — ' + theme + ' mode active!');
+}
+
+function setFontSize(size) {
+  document.documentElement.style.fontSize = size + 'px';
+  showToast('Font size updated.');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+<div class="history-item {% if active_session and active_session.id == s.id %}history-item--active{% endif %}"
+     data-session-id="{{ s.id }}"
+     onclick="window.location='{{ url_for('research.session', session_id=s.id) }}'">
+  {% if s.is_pinned %}<span class="history-item__pin">📌</span>{% endif %}
+  <span class="history-item__title" id="stitle-{{ s.id }}">{{ s.title }}</span>
+  <div class="history-item__menu">
+    <button class="hi-btn" title="{{ 'Unpin' if s.is_pinned else 'Pin' }}"
+      onclick="event.stopPropagation();pinSession({{ s.id }}, this)">
+      {{ '📌' if s.is_pinned else '📍' }}
+    </button>
+    <button class="hi-btn" title="Rename"
+      onclick="event.stopPropagation();renameSession({{ s.id }})">✏️</button>
+    <button class="hi-btn" title="Archive"
+      onclick="event.stopPropagation();archiveSession({{ s.id }})">📦</button>
+    <button class="hi-btn" title="Delete"
+      onclick="event.stopPropagation();deleteSession({{ s.id }})">🗑️</button>
+  </div>
+</div>

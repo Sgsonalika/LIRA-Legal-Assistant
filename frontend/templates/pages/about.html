@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}About LIRA{% endblock %}
+{% block body %}
+<nav class="home-nav">
+  <div class="home-nav__brand">
+    <a href="{{ url_for('home.index') }}" style="display:flex;align-items:center;gap:.6rem;text-decoration:none">
+      <span style="font-size:1.5rem">⚖️</span>
+      <span class="brand-name-dark">LIRA</span>
+    </a>
+  </div>
+  <div class="home-nav__actions">
+    <a href="{{ url_for('auth.login') }}" class="btn btn--ghost btn--sm">Sign In</a>
+  </div>
+</nav>
+<div class="static-page" style="padding-top:6rem">
+  <h1>About LIRA</h1>
+  <p>LIRA (Legal Intelligence & Research Assistant) is a standalone AI-powered legal tool built for individuals, law students, and professionals who need quick, structured legal guidance.</p>
+  <h2>Our Mission</h2>
+  <p>Access to legal knowledge should not be gated by expensive consultations. LIRA democratizes legal understanding through AI — giving everyone a starting point for research, document drafting, and understanding their rights.</p>
+  <h2>What LIRA Can Do</h2>
+  <ul>
+    <li>Answer legal questions with structured, cited responses</li>
+    <li>Generate real legal documents (NDA, employment contracts, rental agreements, and more)</li>
+    <li>Save your research history for future reference</li>
+    <li>Work completely offline after setup — your data never leaves your machine</li>
+  </ul>
+  <h2>Technology</h2>
+  <p>LIRA is built with Python (Flask), SQLite for local storage, and Google Gemini for AI capabilities. It runs entirely on your local machine — no cloud databases, no data sharing.</p>
+  <p style="margin-top:2rem"><a href="{{ url_for('home.index') }}" class="btn btn--ghost">← Back to Home</a></p>
+</div>
+<footer class="home-footer"><p>© 2026 LIRA Legal Assistant</p></footer>
+{% endblock %}

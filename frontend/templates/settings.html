@@ -1,0 +1,165 @@
+{% extends "app_layout.html" %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+
+<div class="settings-grid">
+
+  <!-- Profile -->
+  <div class="settings-section">
+    <div class="settings-section__header">
+      <div class="settings-section__title">👤 Profile</div>
+    </div>
+    <div class="settings-section__body">
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" type="text" id="nameInput" value="{{ current_user.name }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" value="{{ current_user.email }}" disabled style="opacity:.6">
+      </div>
+      <button class="btn btn--primary" onclick="saveName()">Save Changes</button>
+    </div>
+  </div>
+
+  <!-- Appearance -->
+  <div class="settings-section">
+    <div class="settings-section__header">
+      <div class="settings-section__title">🎨 Appearance</div>
+    </div>
+    <div class="settings-section__body">
+      <label class="form-label" style="margin-bottom:.75rem">Theme</label>
+      <div class="theme-options">
+        <div class="theme-option theme-light {% if current_user.theme == 'light' %}active{% endif %}"
+             onclick="setTheme('light')">
+          <div class="theme-preview"></div>
+          <span>☀️ Light</span>
+        </div>
+        <div class="theme-option theme-dark {% if current_user.theme == 'dark' %}active{% endif %}"
+             onclick="setTheme('dark')">
+          <div class="theme-preview"></div>
+          <span>🌙 Dark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key -->
+  <div class="settings-section">
+    <div class="settings-section__header">
+      <div class="settings-section__title">🔑 Gemini API Configuration</div>
+    </div>
+    <div class="settings-section__body">
+
+      {% if has_env_key %}
+        <!-- Key found in environment -->
+        <div style="display:flex;align-items:center;gap:.6rem;background:#d5f0e0;border:1px solid #27ae60;border-radius:8px;padding:.85rem 1rem;margin-bottom:1rem">
+          <span style="font-size:1.2rem">✅</span>
+          <div>
+            <div style="font-weight:600;color:#1a5e38;font-size:.9rem">API key active from environment</div>
+            <div style="color:#2d7a4a;font-size:.8rem;margin-top:.1rem">
+              <code>GEMINI_API_KEY</code> is set — AI features are fully enabled.
+            </div>
+          </div>
+        </div>
+        <p style="font-size:.85rem;color:var(--text-muted)">
+          The environment variable takes priority over any key entered below. To change it, update the variable and restart the app.
+        </p>
+      {% else %}
+        <!-- No env key — show input -->
+        <div style="display:flex;align-items:center;gap:.6rem;background:#fde8e8;border:1px solid #c0392b;border-radius:8px;padding:.85rem 1rem;margin-bottom:1rem">
+          <span style="font-size:1.2rem">⚠️</span>
+          <div>
+            <div style="font-weight:600;color:#7a1e1e;font-size:.9rem">No API key detected</div>
+            <div style="color:#a03030;font-size:.8rem;margin-top:.1rem">AI features are in demo mode.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem;font-size:.85rem">
+          <strong>Recommended: Set as environment variable</strong>
+          <div style="margin-top:.5rem;font-family:var(--font-mono);background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:.5rem .75rem;font-size:.8rem;color:var(--text-muted)">
+            <div style="color:var(--text-light);margin-bottom:.2rem"># Windows (PowerShell)</div>
+            $env:GEMINI_API_KEY = "your_key_here"<br>python main.py
+            <br><br>
+            <div style="color:var(--text-light);margin-bottom:.2rem"># macOS / Linux</div>
+            export GEMINI_API_KEY="your_key_here"<br>python main.py
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Or enter key for this session only</label>
+          <input class="form-input" type="password" id="apiKeyInput" placeholder="AIza…">
+          <p style="font-size:.76rem;color:var(--text-muted);margin-top:.35rem">
+            Stored in browser session only — cleared when you close the app.
+            Not saved to disk.<br>
+            Get a free key: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+          </p>
+        </div>
+        <button class="btn btn--primary" onclick="saveApiKey()">Save for This Session</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="settings-section" style="border-color:rgba(192,57,43,.3)">
+    <div class="settings-section__header" style="background:rgba(192,57,43,.05)">
+      <div class="settings-section__title" style="color:var(--danger)">⚠️ Danger Zone</div>
+    </div>
+    <div class="settings-section__body">
+      <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1rem">Sign out ends your session. All data is preserved locally.</p>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn--danger">Sign Out</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function saveName() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) return alert('Name cannot be empty.');
+  const res  = await fetch('/settings/update-name', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ name }),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    showToast('Name updated!', 'success');
+    document.querySelectorAll('.user-name').forEach(el => el.textContent = name);
+  }
+}
+
+async function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+  document.querySelector('.theme-' + theme).classList.add('active');
+  await fetch('/settings/update-theme', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ theme }),
+  });
+  showToast('Theme saved!', 'success');
+}
+
+async function saveApiKey() {
+  const key = document.getElementById('apiKeyInput')?.value.trim();
+  if (!key) return alert('Please enter an API key.');
+  const res  = await fetch('/settings/update-api-key', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ api_key: key }),
+  });
+  const data = await res.json();
+  if (data.ok) showToast('API key saved for this session. AI features are now enabled!', 'success');
+}
+
+function showToast(msg, type) {
+  const div = document.createElement('div');
+  div.className = 'flash flash--' + type;
+  div.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">✕</button>`;
+  let c = document.querySelector('.flash-container');
+  if (!c) { c = document.createElement('div'); c.className = 'flash-container'; document.body.appendChild(c); }
+  c.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "app_layout.html" %}
+{% block page_title %}Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+  .settings-layout { display:grid; grid-template-columns:220px 1fr; gap:1.5rem; }
+  @media(max-width:768px) { .settings-layout { grid-template-columns:1fr; } }
+
+  .settings-nav { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:.5rem; height:fit-content; }
+  .settings-nav-item {
+    display:flex; align-items:center; gap:.7rem;
+    padding:.7rem 1rem; border-radius:var(--radius-sm);
+    color:var(--text-muted); font-size:.88rem; font-weight:500;
+    text-decoration:none; transition:all .2s; cursor:pointer;
+  }
+  .settings-nav-item:hover { background:var(--bg-input); color:var(--text); }
+  .settings-nav-item.active { background:var(--accent-bg); color:var(--accent); border:1px solid rgba(201,168,76,.25); }
+  .settings-nav-item .nav-icon { font-size:1rem; width:20px; text-align:center; }
+  .settings-nav-divider { height:1px; background:var(--border); margin:.4rem .5rem; }
+
+  .settings-page { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .settings-page-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); }
+  .settings-page-title { font-family:var(--font-display); font-size:1.1rem; font-weight:600; }
+  .settings-page-desc { font-size:.83rem; color:var(--text-muted); margin-top:.2rem; }
+  .settings-page-body { padding:1.5rem; }
+  .settings-row { padding:1.1rem 0; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .settings-row:last-child { border-bottom:none; padding-bottom:0; }
+  .settings-row__label { font-size:.9rem; font-weight:500; }
+  .settings-row__desc { font-size:.78rem; color:var(--text-muted); margin-top:.15rem; }
+  .settings-row__control { flex-shrink:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+
+  <!-- Left nav -->
+  <nav class="settings-nav">
+    <a href="{{ url_for('settings.profile') }}"
+       class="settings-nav-item {% if request.endpoint == 'settings.profile' %}active{% endif %}">
+      <span class="nav-icon">👤</span> Profile
+    </a>
+    <a href="{{ url_for('settings.appearance') }}"
+       class="settings-nav-item {% if request.endpoint == 'settings.appearance' %}active{% endif %}">
+      <span class="nav-icon">🎨</span> Appearance
+    </a>
+    <a href="{{ url_for('settings.api_key') }}"
+       class="settings-nav-item {% if request.endpoint == 'settings.api_key' %}active{% endif %}">
+      <span class="nav-icon">🔑</span> AI / API Key
+    </a>
+    <div class="settings-nav-divider"></div>
+    <a href="{{ url_for('settings.archive') }}"
+       class="settings-nav-item {% if request.endpoint == 'settings.archive' %}active{% endif %}">
+      <span class="nav-icon">📦</span> Archive
+    </a>
+    <div class="settings-nav-divider"></div>
+    <a href="{{ url_for('auth.logout') }}" class="settings-nav-item" style="color:var(--danger)">
+      <span class="nav-icon">🚪</span> Sign Out
+    </a>
+  </nav>
+
+  <!-- Right content -->
+  <div>
+    {% block settings_content %}{% endblock %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showToast(msg, type='success') {
+  const div = document.createElement('div');
+  div.className = 'flash flash--' + type;
+  div.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">✕</button>`;
+  let c = document.querySelector('.flash-container');
+  if (!c) { c = document.createElement('div'); c.className='flash-container'; document.body.appendChild(c); }
+  c.appendChild(div);
+  setTimeout(() => div.remove(), 3500);
+}
+</script>
+{% block settings_js %}{% endblock %}
+{% endblock %}

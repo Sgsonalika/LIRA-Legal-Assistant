@@ -1,0 +1,101 @@
+{% extends "settings/base.html" %}
+{% block settings_content %}
+<div class="settings-page">
+  <div class="settings-page-header">
+    <div class="settings-page-title">🔑 AI / API Key Configuration</div>
+    <div class="settings-page-desc">Connect LIRA to Google Gemini to enable AI features.</div>
+  </div>
+  <div class="settings-page-body">
+
+    {% if has_env_key %}
+    <!-- ✅ Key active from environment -->
+    <div style="background:#d5f0e0;border:1px solid #27ae60;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1.5rem;display:flex;gap:.75rem;align-items:flex-start">
+      <span style="font-size:1.3rem">✅</span>
+      <div>
+        <div style="font-weight:600;color:#1a5e38;font-size:.92rem">API key is active</div>
+        <div style="color:#2d7a4a;font-size:.82rem;margin-top:.2rem">
+          Detected from environment variable: <code style="background:rgba(0,0,0,.08);padding:.1rem .35rem;border-radius:4px">{{ active_env_var }}</code>
+        </div>
+        <div style="color:#2d7a4a;font-size:.8rem;margin-top:.35rem">
+          All AI features (Legal Research, Doc Drafting, Doc Analyzer) are fully enabled.
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <!-- ⚠️ No key found -->
+    <div style="background:#fde8e8;border:1px solid #c0392b;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1.5rem;display:flex;gap:.75rem;align-items:flex-start">
+      <span style="font-size:1.3rem">⚠️</span>
+      <div>
+        <div style="font-weight:600;color:#7a1e1e;font-size:.92rem">No API key detected</div>
+        <div style="color:#a03030;font-size:.82rem;margin-top:.2rem">AI features are running in demo mode.</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- How to set env var -->
+    <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1.5rem">
+      <div style="font-weight:600;font-size:.9rem;margin-bottom:.75rem">📌 Recommended: Set as Environment Variable</div>
+      <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:.75rem">
+        Set the key <strong>before</strong> running <code>python main.py</code> in the same terminal. This persists as long as that terminal is open.
+      </p>
+
+      <div style="margin-bottom:.6rem">
+        <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Windows PowerShell</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:.65rem .9rem;font-family:var(--font-mono);font-size:.81rem;position:relative">
+          $env:GEMINI_API_KEY = "AIza..."<br>python main.py
+          <button onclick="copyToClipboard('$env:GEMINI_API_KEY = \"AIza...\"\npython main.py')"
+                  style="position:absolute;top:.4rem;right:.5rem;background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--text-muted)">📋</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:.6rem">
+        <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Windows CMD</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:.65rem .9rem;font-family:var(--font-mono);font-size:.81rem">
+          set GEMINI_API_KEY=AIza...<br>python main.py
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">macOS / Linux</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:.65rem .9rem;font-family:var(--font-mono);font-size:.81rem">
+          export GEMINI_API_KEY="AIza..."<br>python main.py
+        </div>
+      </div>
+    </div>
+
+    <!-- Session key fallback -->
+    <div style="border-top:1px solid var(--border);padding-top:1.25rem">
+      <div style="font-weight:600;font-size:.9rem;margin-bottom:.3rem">Or enter key for this session</div>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem">
+        Stored in your browser session only — you'll need to re-enter it if you restart the app.
+        <a href="https://aistudio.google.com/app/apikey" target="_blank">Get a free key →</a>
+      </p>
+      <div style="display:flex;gap:.5rem">
+        <input class="form-input" type="password" id="apiKeyInput"
+               placeholder="AIza..." style="flex:1">
+        <button class="btn btn--primary" onclick="saveApiKey()">Save</button>
+        <button class="btn btn--ghost" onclick="document.getElementById('apiKeyInput').type = document.getElementById('apiKeyInput').type === 'password' ? 'text' : 'password'">👁</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block settings_js %}
+<script>
+async function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { showToast('Please enter an API key.', 'error'); return; }
+  const res  = await fetch('/settings/update-api-key', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({api_key: key}),
+  });
+  if ((await res.json()).ok) showToast('API key saved for this session! AI features are now enabled.');
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard?.writeText(text).then(() => showToast('Copied!'));
+}
+</script>
+{% endblock %}

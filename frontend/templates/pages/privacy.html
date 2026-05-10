@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — LIRA{% endblock %}
+{% block body %}
+<nav class="home-nav">
+  <div class="home-nav__brand">
+    <a href="{{ url_for('home.index') }}" style="display:flex;align-items:center;gap:.6rem;text-decoration:none">
+      <span style="font-size:1.5rem">⚖️</span><span class="brand-name-dark">LIRA</span>
+    </a>
+  </div>
+  <div class="home-nav__actions"><a href="{{ url_for('auth.login') }}" class="btn btn--ghost btn--sm">Sign In</a></div>
+</nav>
+<div class="static-page" style="padding-top:6rem">
+  <h1>Privacy Policy</h1>
+  <p><em>Effective date: January 1, 2026</em></p>
+  <h2>Data Storage</h2>
+  <p>All your data — account information, research history, and drafted documents — is stored exclusively in a local SQLite database on your own machine. LIRA does not transmit your personal data to any external servers.</p>
+  <h2>AI Queries</h2>
+  <p>When you use Legal Research or Document Drafting, your queries are sent to Google Gemini API to generate responses. This is governed by <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>. We recommend not including personally identifiable information in your queries.</p>
+  <h2>API Keys</h2>
+  <p>Your Gemini API key is stored in your browser session only and is never written to disk by LIRA. If you set it via environment variable, it remains on your local machine.</p>
+  <h2>Passwords</h2>
+  <p>Passwords are hashed using bcrypt before storage. We never store plaintext passwords.</p>
+  <h2>Contact</h2>
+  <p>For privacy questions, use the <a href="{{ url_for('pages.contact') }}">contact page</a>.</p>
+  <p style="margin-top:2rem"><a href="{{ url_for('home.index') }}" class="btn btn--ghost">← Back to Home</a></p>
+</div>
+<footer class="home-footer"><p>© 2026 LIRA Legal Assistant</p></footer>
+{% endblock %}

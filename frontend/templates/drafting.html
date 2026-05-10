@@ -1,0 +1,339 @@
+{% extends "app_layout.html" %}
+{% block page_title %}Document Drafting{% endblock %}
+
+{% block extra_css %}
+<style>
+  .drafting-layout{display:grid;grid-template-columns:340px 1fr;gap:1.25rem;height:calc(100vh - 115px)}
+  @media(max-width:900px){.drafting-layout{grid-template-columns:1fr;height:auto}}
+  .draft-left{display:flex;flex-direction:column;gap:1rem;overflow-y:auto}
+  .draft-preview{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden}
+  .draft-preview__header{padding:.85rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+  .draft-preview__title{flex:1;font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .preview-body{flex:1;overflow-y:auto;padding:1.25rem}
+  .preview-text{font-family:var(--font-mono);font-size:.79rem;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word}
+  .preview-editor{font-family:var(--font-mono);font-size:.79rem;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;min-height:100%}
+  .preview-editor[contenteditable=true]{border:2px dashed var(--accent);border-radius:8px;padding:.5rem;background:var(--accent-bg)}
+  .draft-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);text-align:center;gap:.5rem;padding:2rem}
+  .saved-docs-list{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:.35rem}
+  .doc-row{display:flex;align-items:center;gap:.4rem;padding:.55rem .65rem;border:1px solid var(--border);border-radius:7px;transition:background .15s;cursor:pointer}
+  .doc-row:hover{background:var(--bg-input)}
+  .doc-row.active{border-color:var(--accent);background:var(--accent-bg)}
+  .doc-row__info{flex:1;min-width:0}
+  .doc-row__type{font-size:.79rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc-row__date{font-size:.7rem;color:var(--text-muted)}
+  .doc-row__actions{display:flex;gap:.2rem;flex-shrink:0}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="drafting-layout">
+
+  <!-- Left column -->
+  <div class="draft-left">
+
+    <!-- Generator form -->
+    <div class="card" style="flex-shrink:0">
+      <div class="card-title" style="font-size:.95rem;margin-bottom:.9rem">📄 Generate Document</div>
+      <div class="form-group">
+        <label class="form-label">Document Type <span style="color:var(--accent)">*</span></label>
+        <select class="form-select" id="docType" onchange="loadFields()">
+          <option value="">— Select type —</option>
+          {% for dt in doc_types %}<option value="{{ dt }}">{{ dt }}</option>{% endfor %}
+        </select>
+      </div>
+      <div id="fieldsContainer"></div>
+      <button class="btn btn--primary" id="generateBtn" onclick="generateDoc()" disabled
+              style="width:100%;justify-content:center;padding:.75rem;margin-top:.25rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Generate Document
+      </button>
+    </div>
+
+    <!-- Saved documents -->
+    <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column">
+      <div class="section-header" style="margin-bottom:.6rem;flex-shrink:0">
+        <span class="section-title" style="font-size:.88rem">📁 Saved Documents</span>
+        <span style="font-size:.75rem;color:var(--text-muted)">{{ docs|length }}</span>
+      </div>
+      {% if docs %}
+        <div class="saved-docs-list">
+          {% for d in docs %}
+            <div class="doc-row" id="doc-row-{{ d.id }}" onclick="openDoc({{ d.id }}, this)">
+              <span style="font-size:.85rem;flex-shrink:0">{% if d.is_pinned %}📌{% else %}📄{% endif %}</span>
+              <div class="doc-row__info">
+                <div class="doc-row__type" id="doc-title-{{ d.id }}">{{ d.doc_type }}</div>
+                <div class="doc-row__date">{{ d.created_at[:10] if d.created_at else '' }}</div>
+              </div>
+              <div class="doc-row__actions">
+                <button class="btn btn--ghost btn--sm" title="{{ 'Unpin' if d.is_pinned else 'Pin' }}"
+                        onclick="event.stopPropagation();pinDoc({{ d.id }},this)">{{ '📌' if d.is_pinned else '📍' }}</button>
+                <button class="btn btn--ghost btn--sm" title="Rename"
+                        onclick="event.stopPropagation();renameDoc({{ d.id }})">✏️</button>
+                <button class="btn btn--danger btn--sm" title="Delete"
+                        onclick="event.stopPropagation();deleteDoc({{ d.id }})">🗑️</button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding:1.25rem">
+          <div class="empty-icon">📁</div>
+          <p style="font-size:.82rem">No documents yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: preview + edit -->
+  <div class="draft-preview">
+    <div class="draft-preview__header">
+      <span class="draft-preview__title" id="previewTitle">Document Preview</span>
+      <div style="display:flex;gap:.35rem;flex-shrink:0" id="previewActions">
+        <!-- Copy -->
+        <button class="btn btn--ghost btn--sm" id="copyBtn" style="display:none" title="Copy text" onclick="copyDoc()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy
+        </button>
+        <!-- Edit toggle -->
+        <button class="btn btn--ghost btn--sm" id="editBtn" style="display:none" title="Edit document" onclick="toggleEdit()">
+          ✏️ Edit
+        </button>
+        <!-- Save edit -->
+        <button class="btn btn--primary btn--sm" id="saveEditBtn" style="display:none" onclick="saveEdit()">
+          💾 Save
+        </button>
+        <!-- Download DOCX -->
+        <a class="btn btn--ghost btn--sm" id="downloadDocxBtn" style="display:none" title="Download .docx">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> DOCX
+        </a>
+        <!-- Download PDF -->
+        <a class="btn btn--ghost btn--sm" id="downloadPdfBtn" style="display:none" title="Download PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF
+        </a>
+      </div>
+    </div>
+
+    <div class="preview-body" id="previewBody">
+      <div class="draft-placeholder" id="previewPlaceholder">
+        <div style="font-size:2.5rem">📋</div>
+        <p style="font-weight:600;color:var(--text)">Document Preview</p>
+        <p style="font-size:.83rem">Generate a new document or click a saved one to open it.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentDocId  = null;
+let isEditing     = false;
+let currentContent = '';
+
+async function loadFields() {
+  const docType = document.getElementById('docType').value;
+  const container = document.getElementById('fieldsContainer');
+  const btn = document.getElementById('generateBtn');
+  if (!docType) { container.innerHTML=''; btn.disabled=true; return; }
+  const res  = await fetch('/drafting/fields/' + encodeURIComponent(docType));
+  const data = await res.json();
+  container.innerHTML = data.fields.map(f => `
+    <div class="form-group">
+      <label class="form-label">${f.label}</label>
+      <input class="form-input" type="text" name="${f.key}" id="field-${f.key}" placeholder="${f.label}">
+    </div>`).join('');
+  btn.disabled = false;
+}
+
+async function generateDoc() {
+  const docType = document.getElementById('docType').value;
+  if (!docType) return;
+  const fields = {};
+  document.querySelectorAll('#fieldsContainer input').forEach(i => {
+    if (i.value.trim()) fields[i.name] = i.value.trim();
+  });
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  showPreviewLoading(docType);
+
+  try {
+    const res  = await fetch('/drafting/generate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({doc_type:docType, fields}),
+    });
+    const data = await res.json();
+    if (data.error) {
+      showPreviewError(data.error);
+    } else {
+      loadPreview(data.doc_id, data.title, data.content);
+      // Add to saved list without reloading
+      appendToSavedList(data.doc_id, data.doc_type || docType, data.title);
+      showToast('Document generated and saved!', 'success');
+    }
+  } catch(err) {
+    showPreviewError('Network error. Please try again.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Generate Document`;
+}
+
+async function openDoc(id, rowEl) {
+  // Mark active row
+  document.querySelectorAll('.doc-row').forEach(r => r.classList.remove('active'));
+  rowEl.classList.add('active');
+
+  showPreviewLoading('Loading…');
+
+  const res  = await fetch('/drafting/view/' + id);
+  const data = await res.json();
+  if (data.error) { showPreviewError(data.error); return; }
+  loadPreview(data.doc_id, data.title, data.content);
+}
+
+function loadPreview(docId, title, content) {
+  currentDocId   = docId;
+  currentContent = content;
+  isEditing      = false;
+
+  document.getElementById('previewPlaceholder')?.remove();
+  document.getElementById('previewTitle').textContent = title || 'Document';
+
+  const body = document.getElementById('previewBody');
+  body.innerHTML = `<div class="preview-text" id="previewText">${escapeHtml(content)}</div>`;
+
+  // Show action buttons
+  const show = ['copyBtn','editBtn','downloadDocxBtn','downloadPdfBtn'];
+  show.forEach(id => { const el = document.getElementById(id); if(el) el.style.display='inline-flex'; });
+  document.getElementById('saveEditBtn').style.display = 'none';
+  document.getElementById('downloadDocxBtn').href = '/drafting/download/' + docId;
+  document.getElementById('downloadPdfBtn').href = '/drafting/download-pdf/' + docId;
+}
+
+function showPreviewLoading(label) {
+  document.getElementById('previewTitle').textContent = label;
+  document.getElementById('previewBody').innerHTML = `
+    <div class="draft-placeholder">
+      <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto .75rem"></div>
+      <p>Generating ${label}…</p>
+      <p style="font-size:.78rem;color:var(--text-muted)">Model auto-switches if busy • usually 10-30s</p>
+    </div>`;
+  ['copyBtn','editBtn','saveEditBtn','downloadDocxBtn','downloadPdfBtn'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display='none';
+  });
+}
+
+function showPreviewError(msg) {
+  document.getElementById('previewBody').innerHTML =
+    `<div class="draft-placeholder"><p style="color:var(--danger)">⚠️ ${msg}</p></div>`;
+}
+
+function copyDoc() {
+  const text = document.getElementById('previewText')?.innerText || currentContent;
+  navigator.clipboard?.writeText(text).then(() => showToast('Copied to clipboard!'));
+}
+
+function toggleEdit() {
+  const textEl = document.getElementById('previewText');
+  if (!textEl) return;
+  isEditing = !isEditing;
+  textEl.contentEditable = isEditing ? 'true' : 'false';
+  textEl.className = isEditing ? 'preview-editor' : 'preview-text';
+  if (isEditing) textEl.focus();
+  document.getElementById('editBtn').style.display    = isEditing ? 'none'        : 'inline-flex';
+  document.getElementById('saveEditBtn').style.display = isEditing ? 'inline-flex' : 'none';
+  document.getElementById('copyBtn').style.display    = isEditing ? 'none'        : 'inline-flex';
+}
+
+async function saveEdit() {
+  const textEl = document.getElementById('previewText');
+  if (!textEl || !currentDocId) return;
+  const content = textEl.innerText;
+  const res = await fetch('/drafting/update/' + currentDocId, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({content}),
+  });
+  if ((await res.json()).ok) {
+    currentContent = content;
+    toggleEdit();
+    showToast('Document saved!');
+  }
+}
+
+function appendToSavedList(docId, docType, title) {
+  const list = document.querySelector('.saved-docs-list');
+  if (!list) { setTimeout(() => location.reload(), 2000); return; }
+  const div = document.createElement('div');
+  div.className = 'doc-row';
+  div.id = 'doc-row-' + docId;
+  div.onclick = () => openDoc(docId, div);
+  div.innerHTML = `
+    <span style="font-size:.85rem;flex-shrink:0">📄</span>
+    <div class="doc-row__info">
+      <div class="doc-row__type" id="doc-title-${docId}">${escapeHtml(docType)}</div>
+      <div class="doc-row__date">${new Date().toISOString().slice(0,10)}</div>
+    </div>
+    <div class="doc-row__actions">
+      <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();pinDoc(${docId},this)">📍</button>
+      <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();renameDoc(${docId})">✏️</button>
+      <button class="btn btn--danger btn--sm" onclick="event.stopPropagation();deleteDoc(${docId})">🗑️</button>
+    </div>`;
+  list.insertBefore(div, list.firstChild);
+  div.classList.add('active');
+  document.querySelectorAll('.doc-row:not(#doc-row-' + docId + ')').forEach(r => r.classList.remove('active'));
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function pinDoc(id, btn) {
+  const res = await fetch('/drafting/pin/'+id, {method:'POST'});
+  const data = await res.json();
+  if (res.ok) { btn.textContent = data.pinned ? '📌' : '📍'; }
+}
+
+async function renameDoc(id) {
+  const el    = document.getElementById('doc-title-'+id);
+  const title = prompt('Rename document:', el?.textContent || '');
+  if (!title) return;
+  const res = await fetch('/drafting/rename/'+id, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title}),
+  });
+  if (res.ok && el) el.textContent = title;
+}
+
+async function deleteDoc(id) {
+  if (!confirm('Delete this document permanently?')) return;
+  const res = await fetch('/drafting/delete/'+id, {method:'POST'});
+  if (res.ok) {
+    document.getElementById('doc-row-'+id)?.remove();
+    if (currentDocId === id) {
+      document.getElementById('previewBody').innerHTML = `
+        <div class="draft-placeholder" id="previewPlaceholder">
+          <div style="font-size:2.5rem">📋</div>
+          <p>Select or generate a document</p>
+        </div>`;
+      ['copyBtn','editBtn','saveEditBtn','downloadDocxBtn','downloadPdfBtn'].forEach(bid => {
+        const el = document.getElementById(bid); if(el) el.style.display='none';
+      });
+      document.getElementById('previewTitle').textContent = 'Document Preview';
+      currentDocId = null;
+    }
+  }
+}
+
+function showToast(msg, type='success') {
+  const div = document.createElement('div');
+  div.className = 'flash flash--' + type;
+  div.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">✕</button>`;
+  let c = document.querySelector('.flash-container');
+  if (!c) { c = document.createElement('div'); c.className='flash-container'; document.body.appendChild(c); }
+  c.appendChild(div);
+  setTimeout(() => div.remove(), 3500);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "settings/base.html" %}
+{% block settings_content %}
+<div class="settings-page">
+  <div class="settings-page-header">
+    <div class="settings-page-title">👤 Profile</div>
+    <div class="settings-page-desc">Manage your personal information and role.</div>
+  </div>
+  <div class="settings-page-body">
+
+    <!-- Avatar / Name -->
+    <div style="display:flex;align-items:center;gap:1.25rem;padding:1rem 0 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1.25rem">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;font-size:1.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        {{ current_user.name[0].upper() }}
+      </div>
+      <div>
+        <div style="font-family:var(--font-display);font-size:1.15rem;font-weight:600">{{ current_user.name }}</div>
+        <div style="font-size:.83rem;color:var(--text-muted)">{{ current_user.email }}</div>
+        <div style="font-size:.78rem;color:var(--accent);margin-top:.2rem">{{ current_user.role_label() }}</div>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-row__label">Display Name</div>
+        <div class="settings-row__desc">How your name appears across LIRA</div>
+      </div>
+      <div class="settings-row__control" style="display:flex;gap:.5rem;align-items:center">
+        <input class="form-input" type="text" id="nameInput" value="{{ current_user.name }}"
+               style="width:200px" onkeydown="if(event.key==='Enter')saveName()">
+        <button class="btn btn--primary btn--sm" onclick="saveName()">Save</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-row__label">Email Address</div>
+        <div class="settings-row__desc">Used for login — cannot be changed</div>
+      </div>
+      <div class="settings-row__control">
+        <input class="form-input" type="email" value="{{ current_user.email }}"
+               disabled style="width:220px;opacity:.6">
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-row__label">Your Role</div>
+        <div class="settings-row__desc">Helps LIRA tailor responses to your context</div>
+      </div>
+      <div class="settings-row__control">
+        <select class="form-select" id="roleSelect" style="width:220px" onchange="saveRole()">
+          {% for key, label in roles %}
+            <option value="{{ key }}" {% if current_user.role == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-row" style="border-bottom:none">
+      <div>
+        <div class="settings-row__label">Member Since</div>
+        <div class="settings-row__desc">Account creation date</div>
+      </div>
+      <div class="settings-row__control" style="color:var(--text-muted);font-size:.88rem">
+        {{ current_user.created_at[:10] if current_user.created_at else '—' }}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block settings_js %}
+<script>
+async function saveName() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) return;
+  const res = await fetch('/settings/update-name', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({name}),
+  });
+  if ((await res.json()).ok) {
+    showToast('Name updated!');
+    document.querySelectorAll('.user-name').forEach(el => el.textContent = name);
+  }
+}
+
+async function saveRole() {
+  const role = document.getElementById('roleSelect').value;
+  await fetch('/settings/update-role', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({role}),
+  });
+  showToast('Role updated!');
+}
+</script>
+{% endblock %}

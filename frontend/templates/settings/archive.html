@@ -1,0 +1,89 @@
+{% extends "settings/base.html" %}
+{% block settings_content %}
+<div style="display:flex;flex-direction:column;gap:1.25rem">
+
+  <!-- Archived Chats -->
+  <div class="settings-page">
+    <div class="settings-page-header">
+      <div class="settings-page-title">📦 Archived Research Sessions</div>
+      <div class="settings-page-desc">{{ archived_chats|length }} archived session{{ 's' if archived_chats|length != 1 else '' }}</div>
+    </div>
+    <div class="settings-page-body" style="padding:0">
+      {% if archived_chats %}
+        {% for s in archived_chats %}
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--border)" id="arc-chat-{{ s.id }}">
+            <span style="font-size:1rem">💬</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.88rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.title }}</div>
+              <div style="font-size:.74rem;color:var(--text-muted)">Archived · {{ s.updated_at[:10] if s.updated_at else '' }}</div>
+            </div>
+            <div style="display:flex;gap:.4rem;flex-shrink:0">
+              <button class="btn btn--ghost btn--sm" onclick="unarchiveChat({{ s.id }})">↩ Restore</button>
+              <button class="btn btn--danger btn--sm" onclick="deleteArchivedChat({{ s.id }})">🗑️</button>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding:2rem">
+          <div class="empty-icon">📭</div>
+          <p>No archived sessions yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Archived Documents -->
+  <div class="settings-page">
+    <div class="settings-page-header">
+      <div class="settings-page-title">📦 Archived Documents</div>
+      <div class="settings-page-desc">{{ archived_docs|length }} archived document{{ 's' if archived_docs|length != 1 else '' }}</div>
+    </div>
+    <div class="settings-page-body" style="padding:0">
+      {% if archived_docs %}
+        {% for d in archived_docs %}
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--border)" id="arc-doc-{{ d.id }}">
+            <span style="font-size:1rem">📄</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.88rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.doc_type }}</div>
+              <div style="font-size:.74rem;color:var(--text-muted)">{{ d.created_at[:10] if d.created_at else '' }}</div>
+            </div>
+            <div style="display:flex;gap:.4rem;flex-shrink:0">
+              <button class="btn btn--ghost btn--sm" onclick="unarchiveDoc({{ d.id }})">↩ Restore</button>
+              <button class="btn btn--danger btn--sm" onclick="deleteArchivedDoc({{ d.id }})">🗑️</button>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding:2rem">
+          <div class="empty-icon">📭</div>
+          <p>No archived documents yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block settings_js %}
+<script>
+async function unarchiveChat(id) {
+  const res = await fetch(`/settings/unarchive-chat/${id}`, {method:'POST'});
+  if (res.ok) { document.getElementById('arc-chat-'+id)?.remove(); showToast('Session restored to Research!'); }
+}
+async function deleteArchivedChat(id) {
+  if (!confirm('Permanently delete this session?')) return;
+  const res = await fetch(`/settings/delete-archived-chat/${id}`, {method:'POST'});
+  if (res.ok) document.getElementById('arc-chat-'+id)?.remove();
+}
+async function unarchiveDoc(id) {
+  const res = await fetch(`/settings/unarchive-doc/${id}`, {method:'POST'});
+  if (res.ok) { document.getElementById('arc-doc-'+id)?.remove(); showToast('Document restored to Drafting!'); }
+}
+async function deleteArchivedDoc(id) {
+  if (!confirm('Permanently delete this document?')) return;
+  const res = await fetch(`/settings/delete-archived-doc/${id}`, {method:'POST'});
+  if (res.ok) document.getElementById('arc-doc-'+id)?.remove();
+}
+</script>
+{% endblock %}

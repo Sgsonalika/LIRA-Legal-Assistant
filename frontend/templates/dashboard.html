@@ -1,0 +1,119 @@
+{% extends "app_layout.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- Welcome banner -->
+<div class="welcome-banner" style="margin-bottom:1.5rem">
+  <div>
+    <div class="welcome-title">Welcome back, {{ current_user.name.split()[0] }} 👋</div>
+    <div class="welcome-sub">Your legal research hub is ready.</div>
+  </div>
+  <div style="position:absolute;right:1.5rem;font-size:4.5rem;opacity:.12">⚖️</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid" style="margin-bottom:1.75rem">
+  <div class="stat-card">
+    <div class="stat-number">{{ total_research }}</div>
+    <div class="stat-label">Research Sessions</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ total_docs }}</div>
+    <div class="stat-label">Documents Drafted</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ total_analyses }}</div>
+    <div class="stat-label">Docs Analyzed</div>
+  </div>
+</div>
+
+<!-- Three activity sections -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem">
+
+  <!-- Recent Research -->
+  <div class="card">
+    <div class="section-header">
+      <span class="section-title" style="font-size:.95rem">🔍 Recent Research</span>
+      <a href="{{ url_for('research.index') }}" class="btn btn--ghost btn--sm">View All</a>
+    </div>
+    {% if sessions %}
+      <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+        {% for s in sessions %}
+          <a href="{{ url_for('research.session', session_id=s.id) }}"
+             style="display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:8px;border:1px solid var(--border);text-decoration:none;color:var(--text);transition:background .15s"
+             onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+            <span style="font-size:.9rem">{% if s.is_pinned %}📌{% else %}💬{% endif %}</span>
+            <span style="flex:1;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.title }}</span>
+            <span style="font-size:.72rem;color:var(--text-muted);flex-shrink:0">{{ s.updated_at[5:10] if s.updated_at else '' }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:1.5rem .5rem">
+        <div class="empty-icon">🔍</div>
+        <p style="font-size:.83rem">No research yet.</p>
+        <a href="{{ url_for('research.index') }}" class="btn btn--primary btn--sm" style="margin-top:.6rem">Start Research</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Documents -->
+  <div class="card">
+    <div class="section-header">
+      <span class="section-title" style="font-size:.95rem">📄 Recent Documents</span>
+      <a href="{{ url_for('drafting.index') }}" class="btn btn--ghost btn--sm">View All</a>
+    </div>
+    {% if docs %}
+      <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+        {% for d in docs %}
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:8px;border:1px solid var(--border)">
+            <span style="font-size:.9rem">{% if d.is_pinned %}📌{% else %}📄{% endif %}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.83rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.doc_type }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">{{ d.created_at[5:10] if d.created_at else '' }}</div>
+            </div>
+            <a href="{{ url_for('drafting.download', doc_id=d.id) }}"
+               class="btn btn--ghost btn--sm" title="Download .docx" style="flex-shrink:0">⬇️</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:1.5rem .5rem">
+        <div class="empty-icon">📄</div>
+        <p style="font-size:.83rem">No documents yet.</p>
+        <a href="{{ url_for('drafting.index') }}" class="btn btn--primary btn--sm" style="margin-top:.6rem">Draft Document</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Analyses -->
+  <div class="card">
+    <div class="section-header">
+      <span class="section-title" style="font-size:.95rem">🔎 Recent Analyses</span>
+      <a href="{{ url_for('analyzer.index') }}" class="btn btn--ghost btn--sm">View All</a>
+    </div>
+    {% if analyses %}
+      <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+        {% for a in analyses %}
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:8px;border:1px solid var(--border);cursor:pointer"
+               onclick="window.location='/analyzer/'">
+            <span style="font-size:.9rem">🔎</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.83rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.title }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">{{ a.created_at[5:10] if a.created_at else '' }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:1.5rem .5rem">
+        <div class="empty-icon">🔎</div>
+        <p style="font-size:.83rem">No analyses yet.</p>
+        <a href="{{ url_for('analyzer.index') }}" class="btn btn--primary btn--sm" style="margin-top:.6rem">Analyze Document</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

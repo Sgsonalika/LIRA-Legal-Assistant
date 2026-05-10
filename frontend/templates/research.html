@@ -1,0 +1,393 @@
+{% extends "app_layout.html" %}
+{% block page_title %}Legal Research{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page-content{padding:1rem 1.75rem}
+  .research-layout{display:flex;gap:1.25rem;height:calc(100vh - 110px)}
+  .history-panel{width:260px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden}
+  .history-panel__header{padding:.85rem 1rem .7rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .hist-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);padding:.5rem .75rem .2rem}
+  .history-list{flex:1;overflow-y:auto;padding:.35rem}
+  .history-item{display:flex;align-items:center;gap:.35rem;padding:.55rem .7rem;border-radius:8px;cursor:pointer;transition:background .15s}
+  .history-item:hover{background:var(--bg-input)}
+  .history-item--active{background:var(--accent-bg);border:1px solid rgba(201,168,76,.25)}
+  .history-item__title{flex:1;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hi-actions{display:none;gap:.1rem}
+  .history-item:hover .hi-actions{display:flex}
+  .hi-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:.15rem .2rem;border-radius:4px;font-size:.72rem;line-height:1}
+  .hi-btn:hover{color:var(--text);background:var(--border)}
+
+  /* Chat */
+  .chat-area{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden}
+  .chat-messages{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+  .msg{display:flex;flex-direction:column;max-width:92%}
+  .msg--user{align-self:flex-end}
+  .msg--assistant{align-self:flex-start;width:92%}
+  .msg__bubble{padding:.85rem 1.1rem;border-radius:16px;font-size:.88rem;line-height:1.7}
+  .msg--user .msg__bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+  .msg--assistant .msg__bubble{background:var(--bg-input);border:1px solid var(--border);border-bottom-left-radius:4px;color:var(--text)}
+
+  /* Rendered markdown inside assistant bubble */
+  .msg--assistant .msg__bubble h2{font-size:.95rem;color:var(--accent);margin:.9rem 0 .3rem;font-family:var(--font-display);font-weight:600;padding-top:.4rem;border-top:1px solid var(--border)}
+  .msg--assistant .msg__bubble h2:first-child{margin-top:0;border-top:none;padding-top:0}
+  .msg--assistant .msg__bubble h3{font-size:.88rem;color:var(--text);margin:.6rem 0 .25rem;font-weight:600}
+  .msg--assistant .msg__bubble ul{padding-left:1.3rem;margin:.35rem 0;list-style:disc}
+  .msg--assistant .msg__bubble ol{padding-left:1.3rem;margin:.35rem 0}
+  .msg--assistant .msg__bubble li{margin:.3rem 0;line-height:1.6}
+  .msg--assistant .msg__bubble p{margin:.25rem 0}
+  .msg--assistant .msg__bubble strong{color:var(--text);font-weight:600}
+  .msg--assistant .msg__bubble em{color:var(--text-muted);font-style:italic}
+  .msg--assistant .msg__bubble code{font-family:var(--font-mono);background:var(--bg-card);padding:.1rem .35rem;border-radius:4px;font-size:.8rem}
+  .msg--assistant .msg__bubble a{color:var(--accent)}
+  .msg--assistant .msg__bubble br{display:block;margin:.15rem 0}
+
+  /* Message footer */
+  .msg__footer{display:flex;align-items:center;gap:.5rem;margin-top:.4rem;padding:0 .2rem}
+  .msg__time{font-size:.7rem;color:var(--text-light)}
+  .msg-action-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:.72rem;padding:.2rem .4rem;border-radius:4px;display:flex;align-items:center;gap:.2rem;font-family:var(--font-body);transition:all .15s}
+  .msg-action-btn:hover{background:var(--bg-input);color:var(--text)}
+  .msg-action-btn svg{width:11px;height:11px}
+
+  /* Follow-up chips */
+  .followups{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.65rem}
+  .followup-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);border-radius:20px;padding:.3rem .8rem;font-size:.78rem;cursor:pointer;transition:all .2s;font-family:var(--font-body);text-align:left}
+  .followup-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+
+  /* Typing */
+  .typing-indicator{display:flex;gap:.35rem;padding:.85rem 1.1rem;background:var(--bg-input);border-radius:16px;border-bottom-left-radius:4px;width:fit-content;border:1px solid var(--border)}
+  .typing-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);animation:typingBounce 1.2s infinite}
+  .typing-dot:nth-child(2){animation-delay:.2s}.typing-dot:nth-child(3){animation-delay:.4s}
+  @keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+
+  /* Input */
+  .chat-input-area{padding:.85rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:.65rem;align-items:flex-end}
+  .chat-input{flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:.7rem .95rem;font-family:var(--font-body);font-size:.88rem;color:var(--text);resize:none;outline:none;max-height:140px;transition:border-color .2s}
+  .chat-input:focus{border-color:var(--accent)}
+  .send-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:.7rem .95rem;cursor:pointer;transition:background .2s;display:flex;align-items:center}
+  .send-btn:hover{background:var(--accent-deep)}
+  .send-btn:disabled{opacity:.45;cursor:not-allowed}
+  .send-btn svg{width:17px;height:17px}
+  .chip{background:var(--bg-input);border:1px solid var(--border);border-radius:20px;padding:.35rem .85rem;font-size:.8rem;cursor:pointer;color:var(--text-muted);transition:all .2s;font-family:var(--font-body)}
+  .chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+  @media(max-width:768px){.research-layout{flex-direction:column;height:auto}.history-panel{width:100%;height:200px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="research-layout">
+
+  <!-- Sidebar -->
+  <div class="history-panel">
+    <div class="history-panel__header">
+      <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)">Sessions</span>
+      <form action="{{ url_for('research.new_session') }}" method="POST">
+        <button type="submit" class="btn btn--primary btn--sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New
+        </button>
+      </form>
+    </div>
+    <div class="history-list">
+      {% set pinned   = sessions | selectattr('is_pinned') | list %}
+      {% set unpinned = sessions | rejectattr('is_pinned') | list %}
+      {% if pinned %}
+        <div class="hist-label">📌 Pinned</div>
+        {% for s in pinned %}
+          <div class="history-item {% if active_session and active_session.id==s.id %}history-item--active{% endif %}"
+               data-sid="{{ s.id }}" onclick="window.location='{{ url_for('research.session', session_id=s.id) }}'">
+            <span class="history-item__title" id="stitle-{{ s.id }}">{{ s.title }}</span>
+            <div class="hi-actions">
+              <button class="hi-btn" title="Unpin"   onclick="event.stopPropagation();pinSession({{ s.id }},this)">📌</button>
+              <button class="hi-btn" title="Rename"  onclick="event.stopPropagation();renameSession({{ s.id }})">✏️</button>
+              <button class="hi-btn" title="Archive" onclick="event.stopPropagation();archiveSession({{ s.id }})">📦</button>
+              <button class="hi-btn" title="Delete"  onclick="event.stopPropagation();deleteSession({{ s.id }})">🗑️</button>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% if unpinned %}
+        {% if pinned %}<div class="hist-label" style="margin-top:.4rem">Recent</div>{% endif %}
+        {% for s in unpinned %}
+          <div class="history-item {% if active_session and active_session.id==s.id %}history-item--active{% endif %}"
+               data-sid="{{ s.id }}" onclick="window.location='{{ url_for('research.session', session_id=s.id) }}'">
+            <span class="history-item__title" id="stitle-{{ s.id }}">{{ s.title }}</span>
+            <div class="hi-actions">
+              <button class="hi-btn" title="Pin"     onclick="event.stopPropagation();pinSession({{ s.id }},this)">📍</button>
+              <button class="hi-btn" title="Rename"  onclick="event.stopPropagation();renameSession({{ s.id }})">✏️</button>
+              <button class="hi-btn" title="Archive" onclick="event.stopPropagation();archiveSession({{ s.id }})">📦</button>
+              <button class="hi-btn" title="Delete"  onclick="event.stopPropagation();deleteSession({{ s.id }})">🗑️</button>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% if not sessions %}
+        <div style="padding:1.5rem 1rem;text-align:center;color:var(--text-muted);font-size:.83rem">No sessions yet.<br>Start a new research!</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-area">
+    {% if active_session %}
+      <div class="chat-messages" id="chatMessages">
+        {% if messages %}
+          {% for msg in messages %}
+            <div class="msg msg--{{ msg.role }}" data-raw="{{ msg.content | e }}">
+              <div class="msg__bubble">
+                {% if msg.role == 'assistant' %}
+                  <div class="rendered-md"></div>
+                {% else %}
+                  {{ msg.content }}
+                {% endif %}
+              </div>
+              {% if msg.role == 'assistant' %}
+                <div class="msg__footer">
+                  <span class="msg__time">{{ msg.created_at[11:16] if msg.created_at else '' }}</span>
+                  <button class="msg-action-btn" onclick="copyMsg(this)" title="Copy">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy
+                  </button>
+                  <button class="msg-action-btn" onclick="shareMsg(this)" title="Share">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share
+                  </button>
+                </div>
+                <div class="followups-container"></div>
+              {% else %}
+                <div class="msg__footer">
+                  <span class="msg__time">{{ msg.created_at[11:16] if msg.created_at else '' }}</span>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="chat-welcome" id="chatWelcome" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;color:var(--text-muted)">
+            <div style="font-size:2.8rem;margin-bottom:.75rem">⚖️</div>
+            <h3 style="font-family:var(--font-display);color:var(--text);font-size:1.2rem;margin-bottom:.4rem">{{ active_session.title }}</h3>
+            <p style="font-size:.88rem;margin-bottom:1rem">Ask your first legal question to begin.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;max-width:420px">
+              {% for q in ["What are my rights as a tenant?","How to file an RTI?","Grounds for divorce in India","Rights of an arrested person","How to send a legal notice?"] %}
+                <button class="chip" onclick="setQuery('{{ q }}')">{{ q }}</button>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="chat-input-area">
+        <textarea class="chat-input" id="chatInput" rows="1"
+          placeholder="Ask a legal question… (Enter = send, Shift+Enter = new line)"
+          onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+
+    {% else %}
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;color:var(--text-muted)">
+        <div style="font-size:3rem;margin-bottom:1rem">⚖️</div>
+        <h3 style="font-family:var(--font-display);color:var(--text);font-size:1.35rem;margin-bottom:.5rem">LIRA Legal Research</h3>
+        <p style="max-width:340px;margin:.4rem auto 1.5rem;font-size:.9rem">Select a session or start a new one.</p>
+        <form action="{{ url_for('research.new_session') }}" method="POST">
+          <button type="submit" class="btn btn--primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Start New Research
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SESSION_ID = {{ active_session.id if active_session else 'null' }};
+
+// Render all existing assistant messages on load
+document.querySelectorAll('.msg--assistant').forEach(msgEl => {
+  const raw = msgEl.getAttribute('data-raw') || '';
+  const div = msgEl.querySelector('.rendered-md');
+  if (div) div.innerHTML = renderMarkdown(raw);
+  // Add follow-up chips for last assistant message
+  renderFollowups(msgEl, raw);
+});
+
+function scrollBottom() {
+  const el = document.getElementById('chatMessages');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+scrollBottom();
+
+// Auto-resize
+const chatInput = document.getElementById('chatInput');
+if (chatInput) {
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+  });
+}
+
+function setQuery(q) {
+  chatInput.value = q;
+  chatInput.focus();
+  chatInput.dispatchEvent(new Event('input'));
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function renderFollowups(msgEl, raw) {
+  const fuContainer = msgEl.querySelector('.followups-container');
+  if (!fuContainer) return;
+  const followups = extractFollowups(raw);
+  if (!followups.length) return;
+  fuContainer.innerHTML = `<div class="followups">${
+    followups.map(q =>
+      `<button class="followup-btn" onclick="setQuery(${JSON.stringify(q)})">${q}</button>`
+    ).join('')
+  }</div>`;
+}
+
+async function sendMessage(overrideQuery) {
+  if (!SESSION_ID) return;
+  const query = overrideQuery || chatInput.value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+
+  const msgs = document.getElementById('chatMessages');
+
+  // Remove welcome screen
+  document.getElementById('chatWelcome')?.remove();
+
+  // Remove follow-up chips from ALL previous messages (keep last only)
+  document.querySelectorAll('.followups-container').forEach(el => el.innerHTML = '');
+
+  const now = new Date().toTimeString().slice(0,5);
+  const esc = query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  msgs.innerHTML += `
+    <div class="msg msg--user">
+      <div class="msg__bubble">${esc}</div>
+      <div class="msg__footer"><span class="msg__time">${now}</span></div>
+    </div>`;
+
+  const tid = 'typing-' + Date.now();
+  msgs.innerHTML += `
+    <div id="${tid}" class="msg msg--assistant">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+    </div>`;
+  scrollBottom();
+
+  try {
+    const res  = await fetch('/research/ask', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: SESSION_ID, query }),
+    });
+    const data = await res.json();
+    document.getElementById(tid)?.remove();
+
+    const answerRaw = data.answer || data.error || '⚠️ Empty response';
+    const aid = 'ans-' + Date.now();
+
+    msgs.innerHTML += `
+      <div class="msg msg--assistant" id="${aid}" data-raw="">
+        <div class="msg__bubble"><div class="rendered-md"></div></div>
+        <div class="msg__footer">
+          <span class="msg__time">${new Date().toTimeString().slice(0,5)}</span>
+          <button class="msg-action-btn" onclick="copyMsg(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy
+          </button>
+          <button class="msg-action-btn" onclick="shareMsg(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share
+          </button>
+          <button class="msg-action-btn" onclick="regenerateMsg(this)" data-query="${esc}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate
+          </button>
+        </div>
+        <div class="followups-container"></div>
+      </div>`;
+
+    const answerEl = document.getElementById(aid);
+    answerEl.setAttribute('data-raw', answerRaw);
+    answerEl.querySelector('.rendered-md').innerHTML = renderMarkdown(answerRaw);
+    renderFollowups(answerEl, answerRaw);
+
+    // Update sidebar title
+    if (data.title) {
+      const titleEl = document.getElementById('stitle-' + SESSION_ID);
+      if (titleEl) titleEl.textContent = data.title;
+    }
+  } catch (err) {
+    document.getElementById(tid)?.remove();
+    msgs.innerHTML += `<div class="msg msg--assistant"><div class="msg__bubble" style="color:var(--danger)">⚠️ Network error. Please try again.</div></div>`;
+  }
+
+  btn.disabled = false;
+  scrollBottom();
+  chatInput.focus();
+}
+
+function copyMsg(btn) {
+  const raw = btn.closest('.msg--assistant')?.getAttribute('data-raw') || '';
+  copyToClipboard(raw);
+}
+
+function shareMsg(btn) {
+  const raw = btn.closest('.msg--assistant')?.getAttribute('data-raw') || '';
+  const text = 'Legal Research from LIRA:\n\n' + raw.substring(0, 500) + '...\n\nPowered by LIRA Legal Assistant';
+  if (navigator.share) {
+    navigator.share({ title: 'LIRA Legal Research', text }).catch(() => copyToClipboard(raw));
+  } else {
+    copyToClipboard(raw);
+    showToast('Copied to clipboard for sharing!', 'success');
+  }
+}
+
+function regenerateMsg(btn) {
+  const query = btn.getAttribute('data-query');
+  if (!query) return;
+  btn.closest('.msg--assistant')?.remove();
+  document.querySelectorAll('.msg--user:last-of-type')?.forEach(el => el.remove());
+  sendMessage(query.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+}
+
+async function renameSession(id) {
+  const el = document.getElementById('stitle-' + id);
+  const title = prompt('Rename session:', el?.textContent || '');
+  if (!title || title === el?.textContent) return;
+  const res = await fetch(`/research/rename/${id}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title}),
+  });
+  if (res.ok && el) el.textContent = title;
+}
+
+async function pinSession(id, btn) {
+  const res = await fetch(`/research/pin/${id}`, {method:'POST'});
+  if (res.ok) setTimeout(() => location.reload(), 200);
+}
+
+async function archiveSession(id) {
+  if (!confirm('Archive this session?')) return;
+  const res = await fetch(`/research/archive/${id}`, {method:'POST'});
+  if (res.ok) {
+    document.querySelector(`[data-sid="${id}"]`)?.remove();
+    if ({{ active_session.id if active_session else 0 }} === id) window.location = '/research/';
+  }
+}
+
+async function deleteSession(id) {
+  if (!confirm('Permanently delete this session and all messages?')) return;
+  const res = await fetch(`/research/delete/${id}`, {method:'POST'});
+  if (res.ok) {
+    document.querySelector(`[data-sid="${id}"]`)?.remove();
+    if ({{ active_session.id if active_session else 0 }} === id) window.location = '/research/';
+  }
+}
+</script>
+{% endblock %}
